@@ -38,6 +38,7 @@
 #include <iterator>
 
 #include "../../agent/agent_reduce.cuh"
+#include "../../agent/agent_reduce2.cuh"
 #include "../../iterator/arg_index_input_iterator.cuh"
 #include "../../thread/thread_operators.cuh"
 #include "../../grid/grid_even_share.cuh"
@@ -662,7 +663,6 @@ struct DispatchReduce :
         return error;
     }
 };
-
 
 
 /******************************************************************************

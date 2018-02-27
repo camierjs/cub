@@ -40,6 +40,7 @@
 
 #include "../iterator/arg_index_input_iterator.cuh"
 #include "dispatch/dispatch_reduce.cuh"
+#include "dispatch/dispatch_reduce2.cuh"
 #include "dispatch/dispatch_reduce_by_key.cuh"
 #include "../util_namespace.cuh"
 
@@ -249,6 +250,47 @@ struct DeviceReduce
             d_in,
             d_out,
             num_items,
+            cub::Sum(),
+            OutputT(),            // zero-initialize
+            stream,
+            debug_synchronous);
+    }
+
+  
+  /**
+   * ***************************************************************************
+   * \brief Computes a device-wide dot product.
+   * ***************************************************************************
+   **/
+    template <
+        typename                    InputIteratorT,
+        typename                    OutputIteratorT>
+    CUB_RUNTIME_FUNCTION
+    static cudaError_t Dot(
+        void                        *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
+        size_t                      &temp_storage_bytes,                ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
+        InputIteratorT              d_in0,                              ///< [in] Pointer to the input sequence of data items
+        InputIteratorT              d_in1,                              ///< [in] Pointer to the input sequence of data items
+        OutputIteratorT             d_out,                              ///< [out] Pointer to the output aggregate
+        int                         num_items,                          ///< [in] Total number of input items (i.e., length of \p d_in)
+        cudaStream_t                stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+        bool                        debug_synchronous   = false)        ///< [in] <b>[optional]</b> Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
+    {
+        // Signed integer type for global offsets
+        typedef int OffsetT;
+
+        // The output value type
+        typedef typename If<(Equals<typename std::iterator_traits<OutputIteratorT>::value_type, void>::VALUE),  // OutputT =  (if output iterator's value type is void) ?
+            typename std::iterator_traits<InputIteratorT>::value_type,                                          // ... then the input iterator's value type,
+            typename std::iterator_traits<OutputIteratorT>::value_type>::Type OutputT;                          // ... else the output iterator's value type
+
+        return DispatchReduce2i<InputIteratorT, OutputIteratorT, OffsetT, cub::Mul, cub::Sum>::Dispatch(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_in0,d_in1,
+            d_out,
+            num_items,
+            cub::Mul(),
             cub::Sum(),
             OutputT(),            // zero-initialize
             stream,

@@ -269,6 +269,40 @@ __device__ __forceinline__ void LoadDirectStriped(
     }
 }
 
+/**
+ * \brief Load with an operator a linear segment of items into a striped arrangement across the thread block.
+ *
+ * \striped
+ *
+ * \tparam BLOCK_THREADS        The thread block size in threads
+ * \tparam LoadOpT              Load operator
+ * \tparam InputT               <b>[inferred]</b> The data type to load.
+ * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+ * \tparam InputIteratorT       <b>[inferred]</b> The random-access iterator type for input \iterator.
+ */
+template <
+    int             BLOCK_THREADS,
+    typename        LoadOpT,  ///< Load operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+    typename        InputT,
+    int             ITEMS_PER_THREAD,
+    typename        InputIteratorT>
+__device__ __forceinline__ void LoadDirectStriped2Op(
+    int             linear_tid,                 ///< [in] A suitable 1D thread-identifier for the calling thread (e.g., <tt>(threadIdx.y * blockDim.x) + linear_tid</tt> for 2D thread blocks)
+    InputIteratorT  block_itr0,                 ///< [in] The thread block's base input iterator for loading from
+    InputIteratorT  block_itr1,                 ///< [in] The thread block's base input iterator for loading from
+    InputT          (&items)[ITEMS_PER_THREAD], ///< [out] Data to load
+    LoadOpT         load_op)
+{
+    const InputIteratorT thread_itr0 = block_itr0 + linear_tid;
+    const InputIteratorT thread_itr1 = block_itr1 + linear_tid;
+
+    #pragma unroll
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+    {
+      items[ITEM] = load_op(thread_itr0[ITEM * BLOCK_THREADS],thread_itr1[ITEM * BLOCK_THREADS]);
+    }
+}
+
 
 /**
  * \brief Load a linear segment of items into a striped arrangement across the thread block, guarded by range

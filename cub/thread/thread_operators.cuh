@@ -104,6 +104,20 @@ struct InequalityWrapper
 
 
 /**
+ * \brief Default mul functor
+ */
+struct Mul
+{
+    /// Boolean sum operator, returns <tt>a + b</tt>
+    template <typename T>
+    __host__ __device__ __forceinline__ T operator()(const T &a, const T &b) const
+    {
+        return a * b;
+    }
+};
+
+
+/**
  * \brief Default sum functor
  */
 struct Sum
